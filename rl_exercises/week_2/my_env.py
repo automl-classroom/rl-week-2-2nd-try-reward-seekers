@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gymnasium as gym
+import numpy as np
 
 
 # ------------- TODO: Implement the following environment -------------
@@ -31,7 +32,55 @@ class MyEnv(gym.Env):
 
     def __init__(self):
         """Initializes the observation and action space for the environment."""
-        pass
+        # super().__init__()
+        self.action_space = gym.spaces.Discrete(2)
+        self.observation_space = gym.spaces.Discrete(2)
+        self.current_state = 0
+        self.steps = 0
+        self.horizon = 10
+
+    def get_info(self) -> dict[str, int]:
+        return {"state": self.current_state}
+
+    def reset(
+        self, *, seed: int | None = None, options: dict | None = None
+    ) -> tuple[int, dict]:
+        self.current_state = 0
+        self.steps = 0
+        return int(self.current_state), {}
+
+    def step(self, action: int) -> tuple[int, float, bool, bool, dict]:
+        if not self.action_space.contains(action):
+            raise RuntimeError(f"Invalid action: {action}")
+
+        reward = float(action)
+        self.current_state = int(action)
+        self.steps += 1
+        terminated = truncated = False
+        if self.steps >= self.horizon:
+            truncated = True
+
+        return (self.current_state, reward, terminated, truncated, {})
+
+    def get_reward_per_action(self) -> np.ndarray:
+        num_action, num_state = self.action_space.n, self.observation_space.n
+
+        reward_matrix = np.zeros((num_state, num_action), dtype=float)
+
+        for state in range(num_state):
+            for action in range(num_action):
+                reward_matrix[state][action] = float(action)
+        return reward_matrix
+
+    def get_transition_matrix(self) -> np.ndarray:
+        num_action, num_state = self.action_space.n, self.observation_space.n
+
+        transition_matrix = np.zeros((num_state, num_action, num_state))
+
+        for state in range(num_state):
+            for action in range(num_action):
+                transition_matrix[state][action][action] = 1.0
+        return transition_matrix
 
 
 class PartialObsWrapper(gym.Wrapper):
